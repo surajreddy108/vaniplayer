@@ -48,7 +48,7 @@ const VaniPlayer = () => {
     const audioRef = useRef(new Audio())
 
     useEffect(() => {
-        fetch('/data/vani_data.json')
+        fetch('data/vani_data.json')
             .then(res => { if (!res.ok) throw new Error("Database not found"); return res.json(); })
             .then(data => {
                 setVaniData(data);
