@@ -8,8 +8,6 @@ import {
 import prabhupadaImg from './assets/prabhupada.png'
 import rnsmImg from './assets/rnsm.png'
 
-const ITEMS_PER_PAGE = 12
-
 class ErrorBoundary extends React.Component {
     constructor(props) { super(props); this.state = { hasError: false, error: null }; }
     static getDerivedStateFromError(error) { return { hasError: true, error }; }
@@ -35,7 +33,6 @@ const VaniPlayer = () => {
 
     const [activeTab, setActiveTab] = useState('')
     const [search, setSearch] = useState('')
-    const [currentPage, setCurrentPage] = useState(1)
     const [currentTrack, setCurrentTrack] = useState(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [progress, setProgress] = useState(0)
@@ -46,6 +43,7 @@ const VaniPlayer = () => {
     const [playbackError, setPlaybackError] = useState(null)
 
     const audioRef = useRef(new Audio())
+    const listRef = useRef(null)
 
     useEffect(() => {
         fetch('data/vani_data.json')
@@ -59,9 +57,11 @@ const VaniPlayer = () => {
             .catch(err => { setLoadError(err.message); setLoading(false); });
     }, [])
 
+    // Reset scroll on tab/search
+    useEffect(() => { if (listRef.current) listRef.current.scrollTop = 0; }, [activeTab, search])
+
     const currentTabItems = useMemo(() => (vaniData && activeTab) ? vaniData[activeTab] || [] : [], [vaniData, activeTab])
 
-    // Intelligent Artwork Resolver
     const getArtwork = (tab) => {
         if (tab === 'HHRNSM') return rnsmImg;
         return prabhupadaImg;
@@ -75,19 +75,8 @@ const VaniPlayer = () => {
         )
     }, [search, currentTabItems])
 
-    const paginatedData = useMemo(() => {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE
-        return filteredData.slice(start, start + ITEMS_PER_PAGE)
-    }, [filteredData, currentPage])
-
-    const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE)
-
-    useEffect(() => { setCurrentPage(1); }, [activeTab, search])
-
-    // Intelligent URL Resolver
     const resolveUrl = (track) => {
         let url = String(track.link || '');
-        // Ensure all drive links use direct download
         if (url.includes('drive.google.com') && !url.includes('export=download')) {
             const id = url.split('id=')[1]?.split('&')[0];
             if (id) return `https://drive.google.com/uc?id=${id}&export=download`;
@@ -117,16 +106,13 @@ const VaniPlayer = () => {
         } catch (e) {
             console.warn("Primary path failed, attempting recovery...", resolved);
 
-            // Systematic Link Recovery algorithm
             if (!resolved.includes('drive.google.com')) {
                 const filename = resolved.split('/').pop().replace(/ /g, '%20');
                 const attempts = [
                     `https://audio.iskcondesiretree.com/06_-_More/01_-_ISKCON_Pune/2025/${filename}`,
                     `https://audio.iskcondesiretree.com/06_-_More/07_-_ISKCON_Punjabi_Baugh/2025/${filename}`,
                     `https://audio.iskcondesiretree.com/02_-_ISKCON_Swamis/ISKCON_Swamis_-_R_to_Y/His_Holiness_Radhanath_Swami/Lectures/00_-_Year_wise/Devotional_Nectar_-_2025/${filename}`,
-                    `https://audio.iskcondesiretree.com/06_-_More/01_-_ISKCON_Pune/2024/${filename}`,
-                    `https://audio.iskcondesiretree.com/06_-_More/07_-_ISKCON_Punjabi_Baugh/2024/${filename}`,
-                    `https://audio.iskcondesiretree.com/05_-_ISKCON_Chowpatty/21_-_2025/03_-_March/${filename}`
+                    `https://audio.iskcondesiretree.com/06_-_More/01_-_ISKCON_Pune/2024/${filename}`
                 ];
 
                 for (const alt of attempts) {
@@ -140,8 +126,7 @@ const VaniPlayer = () => {
                     } catch (err) { continue; }
                 }
             }
-
-            setPlaybackError("Recording temporarily unavailable. Server paths are being matched.");
+            setPlaybackError("Link unavailable. Server paths are being checked.");
         }
     }
 
@@ -172,13 +157,13 @@ const VaniPlayer = () => {
     if (loading) return (
         <div style={{ background: '#0f172a', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
             <Loader2 size={48} className="animate-spin" style={{ color: '#fbbf24', marginBottom: '20px' }} />
-            <h2 style={{ letterSpacing: '0.1em', fontWeight: 800 }}>INITIALIZING VANI ARCHIVE...</h2>
+            <h2 style={{ letterSpacing: '0.1em', fontWeight: 800 }}>VANI ARCHIVE LOADING...</h2>
         </div>
     )
 
     return (
-        <div className="main-layout" style={{ background: '#0f172a', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <header className="app-header" style={{ opacity: showDetail ? 0 : 1, transition: '0.3s' }}>
+        <div className="main-layout" style={{ background: '#0f172a', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <header className="app-header" style={{ opacity: showDetail ? 0 : 1, transition: '0.3s', flexShrink: 0 }}>
                 <h1 className="brand-title">Vani Player</h1>
                 <p style={{ color: '#94a3b8', fontWeight: 800, fontSize: '0.65rem', letterSpacing: '0.25em' }}>DIVINE INSTRUCTION PORTAL</p>
 
@@ -187,35 +172,40 @@ const VaniPlayer = () => {
                     <input className="search-input" placeholder="Search recordings..." value={search} onChange={(e) => setSearch(e.target.value)} />
                 </div>
 
-                <div className="tab-row" style={{ display: 'flex', gap: '8px', justifyContent: 'center', overflowX: 'auto', padding: '10px', scrollbarWidth: 'none' }}>
+                <div className="tab-row" style={{ display: 'flex', gap: '8px', justifyContent: 'center', overflowX: 'auto', padding: '10px 10px 20px', scrollbarWidth: 'none' }}>
                     {Object.keys(vaniData).map(tab => (
                         <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>{tab}</button>
                     ))}
                 </div>
             </header>
 
-            <main className="song-grid" style={{ flexGrow: 1, paddingBottom: '140px', opacity: showDetail ? 0 : 1 }}>
-                {paginatedData.map((track, i) => (
+            <main
+                ref={listRef}
+                className="song-grid"
+                style={{
+                    flexGrow: 1,
+                    overflowY: 'auto',
+                    padding: '0 24px 140px',
+                    opacity: showDetail ? 0 : 1,
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#334155 transparent'
+                }}
+            >
+                {filteredData.map((track, i) => (
                     <div key={i} className="song-card" onClick={() => handlePlay(track)}>
                         <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', marginRight: '16px', flexShrink: 0 }}>
                             <img src={getArtwork(activeTab)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Art" />
                         </div>
                         <div className="song-info">
-                            <div className="song-title" style={{ color: currentTrack === track ? '#fbbf24' : 'white' }}>{String(track.title).split('/').pop()}</div>
-                            <div className="song-meta">{String(track.Theme || activeTab).substring(0, 60)}</div>
+                            <div className="song-title" style={{ color: currentTrack === track ? '#fbbf24' : 'white' }}>{String(track.title)}</div>
+                            <div className="song-meta">{String(track.Theme || activeTab).substring(0, 100)}</div>
                         </div>
                         <div style={{ marginLeft: '12px' }}>
-                            {currentTrack === track && isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                            {currentTrack === track && isPlaying ? <Pause size={20} fill="#fbbf24" style={{ color: '#fbbf24' }} /> : <Play size={20} />}
                         </div>
                     </div>
                 ))}
-                {totalPages > 1 && (
-                    <div className="pagination" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', padding: '40px 0' }}>
-                        <button className="pg-btn" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft /></button>
-                        <span style={{ fontWeight: 800, fontSize: '0.8rem' }}>{currentPage} / {totalPages}</span>
-                        <button className="pg-btn" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}><ChevronRight /></button>
-                    </div>
-                )}
+                {filteredData.length === 0 && <div style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>No recordings match your search.</div>}
             </main>
 
             {currentTrack && !showDetail && (
@@ -225,7 +215,7 @@ const VaniPlayer = () => {
                             <img src={getArtwork(activeTab)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                         <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 800, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{String(currentTrack.title).split('/').pop()}</div>
+                            <div style={{ fontWeight: 800, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{String(currentTrack.title)}</div>
                             <div style={{ fontSize: '0.65rem', color: '#fbbf24', fontWeight: 700 }}>{activeTab}</div>
                         </div>
                     </div>
@@ -247,8 +237,8 @@ const VaniPlayer = () => {
                         <div style={{ width: 'clamp(220px, 45vh, 400px)', height: 'clamp(220px, 45vh, 400px)', borderRadius: '32px', overflow: 'hidden', boxShadow: '0 50px 100px rgba(0,0,0,0.6)', marginBottom: '40px' }}>
                             <img src={getArtwork(activeTab)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
-                        <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'white', marginBottom: '12px', maxWidth: '800px' }}>{String(currentTrack.title).split('/').pop()}</h2>
-                        <p style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em' }}>{activeTab} • {currentTrack.location || 'Spiritual Archive'}</p>
+                        <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'white', marginBottom: '12px', maxWidth: '800px' }}>{String(currentTrack.title)}</h2>
+                        <p style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em' }}>{activeTab} • {currentTrack.Theme || 'Spiritual Archive'}</p>
 
                         {playbackError && (
                             <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171', fontSize: '0.85rem', fontWeight: 700, padding: '12px 24px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '100px' }}>
@@ -279,7 +269,7 @@ const VaniPlayer = () => {
                                 <button onClick={() => skip(-10)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', position: 'relative' }}>
                                     <RotateCcw size={36} /><span style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '10px', fontWeight: 900 }}>10</span>
                                 </button>
-                                <div onClick={() => handlePlay(currentTrack)} style={{ width: '80px', height: '80px', background: 'white', borderRadius: '50%', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'transform 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
+                                <div onClick={() => handlePlay(currentTrack)} style={{ width: '80px', height: '80px', background: 'white', borderRadius: '50%', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'transform 0.1s' }}>
                                     {isPlaying ? <Pause size={40} fill="black" /> : <Play size={40} fill="black" style={{ marginLeft: '4px' }} />}
                                 </div>
                                 <button onClick={() => skip(30)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', position: 'relative' }}>
@@ -289,7 +279,7 @@ const VaniPlayer = () => {
 
                             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '24px' }}>
                                 <button onClick={changeSpeed} style={{ background: '#fbbf24', border: 'none', color: '#0f172a', padding: '8px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 900, cursor: 'pointer' }}>{playbackRate}x</button>
-                                <a href={resolveUrl(currentTrack)} target="_blank" rel="noreferrer" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseOver={e => e.currentTarget.style.color = 'white'} onMouseOut={e => e.currentTarget.style.color = '#94a3b8'}><Link2 size={28} /></a>
+                                <a href={resolveUrl(currentTrack)} target="_blank" rel="noreferrer" style={{ color: '#94a3b8' }}><Link2 size={28} /></a>
                             </div>
                         </div>
                     </div>
