@@ -183,28 +183,44 @@ body {
 }
 
 .detail-header {
-  padding: 24px;
+  padding: 16px 24px;
   display: flex;
   justify-content: flex-end;
 }
 
+/* Player Controls - Top Heavy Layout */
+.player-controls-bar {
+  /* Removed background background color to blend with page or keep transparent */
+  /* padding reduced to fit nicely at top */
+  padding: 10px 48px 40px;
+  width: 100%;
+  border-bottom: 1px solid var(--glass-border);
+  /* Separator below controls now */
+}
+
+/* Detail Content (Artwork + Title) moved below */
 .detail-content {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
+  /* Center vertically in remaining space */
+  padding: 20px 24px;
   text-align: center;
+  overflow-y: auto;
+  /* Allow scrolling if title description is long on small phones */
 }
 
 .artwork-box {
-  width: clamp(200px, 40vh, 360px);
-  height: clamp(200px, 40vh, 360px);
+  width: clamp(200px, 40vh, 320px);
+  height: clamp(200px, 40vh, 320px);
   border-radius: 32px;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
   overflow: hidden;
   box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7);
+  flex-shrink: 0;
+  /* Don't squash artwork */
 }
 
 .artwork-box img {
@@ -214,7 +230,7 @@ body {
 }
 
 .detail-title {
-  font-size: clamp(1.2rem, 4vw, 2.5rem);
+  font-size: clamp(1.2rem, 4vw, 2.2rem);
   font-weight: 800;
   margin-bottom: 8px;
   max-width: 800px;
@@ -226,32 +242,29 @@ body {
   text-transform: uppercase;
   font-size: 0.7rem;
   letter-spacing: 0.1em;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
 }
 
-/* Elevated Player Controls - The Mobile Fix */
-.player-controls-bar {
-  background: rgba(30, 41, 59, 0.5);
-  border-top: 1px solid var(--glass-border);
-  padding: 40px 48px 60px;
-  width: 100%;
-}
 
 @media (max-width: 768px) {
-
-  /* Lift the controls on mobile to stay above home bars/navs */
   .player-controls-bar {
-    padding: 30px 24px 110px;
+    padding: 10px 24px 30px;
   }
 
   .mini-player {
-    bottom: 80px;
+    bottom: 24px;
     left: 12px;
     right: 12px;
   }
 
   .song-grid {
     padding-bottom: 160px;
+  }
+
+  .artwork-box {
+    margin-bottom: 20px;
+    width: clamp(180px, 35vh, 280px);
+    height: clamp(180px, 35vh, 280px);
   }
 }
 
@@ -300,8 +313,8 @@ body {
 }
 
 .play-pause-circle {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   background: white;
   border-radius: 50%;
   color: black;

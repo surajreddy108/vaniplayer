@@ -186,15 +186,9 @@ const VaniPlayer = () => {
                             <X size={32} color="white" />
                         </button>
                     </div>
-                    <div className="detail-content">
-                        <div className="artwork-box">
-                            <img src={getArtwork(activeTab)} />
-                        </div>
-                        <h2 className="detail-title">{String(currentTrack.title)}</h2>
-                        <p className="detail-meta">{activeTab} • {currentTrack.Theme || 'Spiritual Archive'}</p>
-                        {playbackError && <div style={{ color: '#f87171', fontSize: '0.85rem', fontWeight: 700, marginTop: '10px' }}>{playbackError}</div>}
-                    </div>
-                    <div className="player-controls-bar">
+
+                    {/* PLAYER CONTROLS AT TOP */}
+                    <div className="player-controls-bar top-heavy">
                         <div className="progress-container">
                             <div className="progress-bar-base" onClick={(e) => {
                                 const r = e.currentTarget.getBoundingClientRect();
@@ -208,23 +202,33 @@ const VaniPlayer = () => {
                             </div>
                         </div>
                         <div className="controls-row">
-                            <div style={{ flex: 1, opacity: 0.3 }}><Shuffle size={24} /></div>
+                            <div style={{ flex: 1, opacity: 0.3 }}><Shuffle size={20} /></div>
                             <div className="main-controls">
                                 <button className="icon-btn" onClick={() => skip(-10)} style={{ position: 'relative' }}>
-                                    <RotateCcw size={36} /><span style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '10px', fontWeight: 900 }}>10</span>
+                                    <RotateCcw size={32} /><span style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '9px', fontWeight: 900 }}>10</span>
                                 </button>
                                 <div className="play-pause-circle" onClick={() => handlePlay(currentTrack)}>
-                                    {isPlaying ? <Pause size={40} fill="black" /> : <Play size={40} fill="black" style={{ marginLeft: '4px' }} />}
+                                    {isPlaying ? <Pause size={32} fill="black" /> : <Play size={32} fill="black" style={{ marginLeft: '4px' }} />}
                                 </div>
                                 <button className="icon-btn" onClick={() => skip(30)} style={{ position: 'relative' }}>
-                                    <RotateCw size={36} /><span style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '10px', fontWeight: 900 }}>30</span>
+                                    <RotateCw size={32} /><span style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '9px', fontWeight: 900 }}>30</span>
                                 </button>
                             </div>
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '20px' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '16px' }}>
                                 <button className="util-btn" onClick={changeSpeed}>{playbackRate}x</button>
-                                <a href={resolveUrl(currentTrack)} target="_blank" rel="noreferrer" style={{ color: '#94a3b8' }}><Link2 size={28} /></a>
+                                <a href={resolveUrl(currentTrack)} target="_blank" rel="noreferrer" style={{ color: '#94a3b8' }}><Link2 size={24} /></a>
                             </div>
                         </div>
+                    </div>
+
+                    {/* ARTWORK AND DATA BELOW CONTENT */}
+                    <div className="detail-content">
+                        <div className="artwork-box small-mobile">
+                            <img src={getArtwork(activeTab)} />
+                        </div>
+                        <h2 className="detail-title">{String(currentTrack.title)}</h2>
+                        <p className="detail-meta">{activeTab} • {currentTrack.Theme || 'Spiritual Archive'}</p>
+                        {playbackError && <div style={{ color: '#f87171', fontSize: '0.85rem', fontWeight: 700, marginTop: '10px' }}>{playbackError}</div>}
                     </div>
                 </div>
             )}
