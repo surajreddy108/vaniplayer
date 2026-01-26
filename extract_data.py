@@ -17,6 +17,14 @@ def extract_all_sheets(file_path, output_path):
             df = df.where(pd.notnull(df), None)
             
             records = df.to_dict(orient='records')
+            
+            # Normalize keys to lowercase for robustness
+            normalized_records = []
+            for row in records:
+                new_row = {k.lower().strip(): v for k, v in row.items()}
+                normalized_records.append(new_row)
+            records = normalized_records
+
             processed_records = []
             
             for row in records:
@@ -27,7 +35,7 @@ def extract_all_sheets(file_path, output_path):
 
                 raw_link = str(row.get('link', '')).strip()
                 raw_title = str(row.get('title', '')).strip()
-                raw_theme = str(row.get('Theme', '')).strip()
+                raw_theme = str(row.get('theme', '')).strip()
 
                 # Determine correct filename & title for each sheet type
                 filename = ""
