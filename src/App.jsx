@@ -98,7 +98,7 @@ const VaniPlayer = () => {
                     try { audioRef.current.src = alt; await audioRef.current.play(); setIsPlaying(true); setPlaybackError(null); return; } catch (err) { continue; }
                 }
             }
-            setPlaybackError("Accessing archive...");
+            setPlaybackError("Link unavailable.");
         }
     }
 
@@ -118,24 +118,24 @@ const VaniPlayer = () => {
         audio.addEventListener('timeupdate', update)
         audio.addEventListener('loadedmetadata', update)
         audio.addEventListener('ended', () => setIsPlaying(false))
-        audio.addEventListener('error', () => { if (isPlaying) setPlaybackError("Connecting..."); setIsPlaying(false); })
+        audio.addEventListener('error', () => { if (isPlaying) setPlaybackError("Transmission interrupted."); setIsPlaying(false); })
         return () => { audio.removeEventListener('timeupdate', update); audio.removeEventListener('loadedmetadata', update); }
     }, [isPlaying])
 
     if (loading) return (
-        <div className="main-layout" style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ background: '#0f172a', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
             <Loader2 size={48} className="animate-spin" style={{ color: '#fbbf24', marginBottom: '20px' }} />
             <h2 style={{ letterSpacing: '0.1em', fontWeight: 800 }}>VANI ARCHIVE LOADING...</h2>
         </div>
     )
 
     return (
-        <div className="main-layout">
-            <header className="app-header" style={{ display: showDetail ? 'none' : 'block' }}>
+        <div className="main-layout" style={{ height: '100vh', overflow: 'hidden' }}>
+            <header className="app-header" style={{ opacity: showDetail ? 0 : 1, transition: '0.3s' }}>
                 <h1 className="brand-title">Vani Player</h1>
-                <p style={{ color: '#94a3b8', fontWeight: 800, fontSize: '0.6rem', letterSpacing: '0.2em' }}>DIVINE INSTRUCTION PORTAL</p>
+                <p style={{ color: '#94a3b8', fontWeight: 800, fontSize: '0.65rem', letterSpacing: '0.25em' }}>DIVINE INSTRUCTION PORTAL</p>
                 <div className="search-container">
-                    <Search size={18} style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
+                    <Search size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
                     <input className="search-input" placeholder="Search teachings..." value={search} onChange={(e) => setSearch(e.target.value)} />
                 </div>
                 <div className="tab-row">
@@ -145,18 +145,18 @@ const VaniPlayer = () => {
                 </div>
             </header>
 
-            <main ref={listRef} className="song-grid" style={{ display: showDetail ? 'none' : 'flex' }}>
+            <main ref={listRef} className="song-grid" style={{ flexGrow: 1, overflowY: 'auto', opacity: showDetail ? 0 : 1 }}>
                 {filteredData.map((track, i) => (
                     <div key={i} className="song-card" onClick={() => handlePlay(track)}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '8px', overflow: 'hidden', marginRight: '14px', flexShrink: 0 }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', marginRight: '16px', flexShrink: 0 }}>
                             <img src={getArtwork(activeTab)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Art" />
                         </div>
                         <div className="song-info">
                             <div className="song-title" style={{ color: currentTrack === track ? '#fbbf24' : 'white' }}>{String(track.title)}</div>
-                            <div className="song-meta">{String(track.Theme || activeTab).substring(0, 80)}</div>
+                            <div className="song-meta">{String(track.Theme || activeTab).substring(0, 100)}</div>
                         </div>
-                        <div style={{ marginLeft: '10px', opacity: 0.8 }}>
-                            {currentTrack === track && isPlaying ? <Pause size={18} fill="#fbbf24" stroke="none" /> : <Play size={18} />}
+                        <div>
+                            {currentTrack === track && isPlaying ? <Pause size={20} fill="#fbbf24" stroke="none" /> : <Play size={20} />}
                         </div>
                     </div>
                 ))}
@@ -164,17 +164,17 @@ const VaniPlayer = () => {
 
             {currentTrack && !showDetail && (
                 <div className="mini-player" onClick={() => setShowDetail(true)}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
                             <img src={getArtwork(activeTab)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                         <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 800, fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{String(currentTrack.title)}</div>
+                            <div style={{ fontWeight: 800, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{String(currentTrack.title)}</div>
                             <div style={{ fontSize: '0.65rem', color: '#fbbf24', fontWeight: 700 }}>{activeTab}</div>
                         </div>
                     </div>
                     <button className="icon-btn" onClick={(e) => { e.stopPropagation(); handlePlay(currentTrack); }}>
-                        {isPlaying ? <Pause size={24} fill="white" /> : <Play size={24} fill="white" />}
+                        {isPlaying ? <Pause size={28} fill="white" /> : <Play size={28} fill="white" />}
                     </button>
                 </div>
             )}
@@ -192,7 +192,7 @@ const VaniPlayer = () => {
                         </div>
                         <h2 className="detail-title">{String(currentTrack.title)}</h2>
                         <p className="detail-meta">{activeTab} • {currentTrack.Theme || 'Spiritual Archive'}</p>
-                        {playbackError && <div style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>{playbackError}</div>}
+                        {playbackError && <div style={{ color: '#f87171', fontSize: '0.85rem', fontWeight: 700, marginTop: '10px' }}>{playbackError}</div>}
                     </div>
                     <div className="player-controls-bar">
                         <div className="progress-container">
@@ -200,7 +200,7 @@ const VaniPlayer = () => {
                                 const r = e.currentTarget.getBoundingClientRect();
                                 audioRef.current.currentTime = ((e.clientX - r.left) / r.width) * audioRef.current.duration;
                             }}>
-                                <div className="progress-bar-fill" style={{ width: `${progress}%`, background: '#fbbf24' }} />
+                                <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
                             </div>
                             <div className="time-stamps">
                                 <span>{Math.floor(currentTime / 60)}:{Math.floor(currentTime % 60).toString().padStart(2, '0')}</span>
@@ -208,21 +208,21 @@ const VaniPlayer = () => {
                             </div>
                         </div>
                         <div className="controls-row">
-                            <div className="mobile-hide" style={{ flex: 1, opacity: 0.3 }}><Shuffle size={24} /></div>
+                            <div style={{ flex: 1, opacity: 0.3 }}><Shuffle size={24} /></div>
                             <div className="main-controls">
                                 <button className="icon-btn" onClick={() => skip(-10)} style={{ position: 'relative' }}>
-                                    <RotateCcw size={32} /><span style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '10px', fontWeight: 900 }}>10</span>
+                                    <RotateCcw size={36} /><span style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '10px', fontWeight: 900 }}>10</span>
                                 </button>
                                 <div className="play-pause-circle" onClick={() => handlePlay(currentTrack)}>
-                                    {isPlaying ? <Pause size={36} fill="black" /> : <Play size={36} fill="black" style={{ marginLeft: '4px' }} />}
+                                    {isPlaying ? <Pause size={40} fill="black" /> : <Play size={40} fill="black" style={{ marginLeft: '4px' }} />}
                                 </div>
                                 <button className="icon-btn" onClick={() => skip(30)} style={{ position: 'relative' }}>
-                                    <RotateCw size={32} /><span style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '10px', fontWeight: 900 }}>30</span>
+                                    <RotateCw size={36} /><span style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '10px', fontWeight: 900 }}>30</span>
                                 </button>
                             </div>
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '16px' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '20px' }}>
                                 <button className="util-btn" onClick={changeSpeed}>{playbackRate}x</button>
-                                <a href={resolveUrl(currentTrack)} target="_blank" rel="noreferrer" style={{ color: '#94a3b8' }}><Link2 size={24} /></a>
+                                <a href={resolveUrl(currentTrack)} target="_blank" rel="noreferrer" style={{ color: '#94a3b8' }}><Link2 size={28} /></a>
                             </div>
                         </div>
                     </div>
