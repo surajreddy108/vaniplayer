@@ -109,6 +109,16 @@ const VaniPlayer = () => {
         setPlaybackRate(next); audioRef.current.playbackRate = next;
     }
 
+    const progressRef = useRef(null);
+
+    const handleSeek = (e) => {
+        if (!progressRef.current || !audioRef.current.duration) return;
+        const r = progressRef.current.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const pos = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+        audioRef.current.currentTime = pos * audioRef.current.duration;
+    };
+
     useEffect(() => {
         const audio = audioRef.current
         const update = () => {
@@ -198,10 +208,13 @@ const VaniPlayer = () => {
 
                     <div className="player-controls-bar">
                         <div className="progress-container">
-                            <div className="progress-bar-base" onClick={(e) => {
-                                const r = e.currentTarget.getBoundingClientRect();
-                                audioRef.current.currentTime = ((e.clientX - r.left) / r.width) * audioRef.current.duration;
-                            }}>
+                            <div
+                                className="progress-bar-base"
+                                ref={progressRef}
+                                onClick={handleSeek}
+                                onTouchStart={handleSeek}
+                                onTouchMove={handleSeek}
+                            >
                                 <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
                             </div>
                             <div className="time-stamps">
