@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import {
-    Search, Play, Pause, Music, ChevronLeft, ChevronRight,
-    X, Volume2, Shuffle, Repeat, RotateCcw, RotateCw,
-    MoreHorizontal, AlertCircle, Loader2, Link2, Info
+    Search, Play, Pause, ChevronLeft, ChevronRight,
+    X, Shuffle, RotateCcw, RotateCw,
+    MoreHorizontal, AlertCircle, Loader2, Link2, Info,
+    User, LogOut
 } from 'lucide-react'
+import LoginScreen from './LoginScreen'
 import prabhupadaImg from './assets/prabhupada.png'
 import rnsmImg from './assets/rnsm.png'
 
@@ -28,6 +30,9 @@ const VaniPlayer = () => {
     const [vaniData, setVaniData] = useState(null)
     const [loading, setLoading] = useState(true)
     const [loadError, setLoadError] = useState(null)
+
+    const [currentUser, setCurrentUser] = useState(localStorage.getItem('vani_last_user') || null)
+
     const [activeTab, setActiveTab] = useState('')
     const [search, setSearch] = useState('')
     const [currentTrack, setCurrentTrack] = useState(null)
@@ -41,6 +46,62 @@ const VaniPlayer = () => {
 
     const audioRef = useRef(new Audio())
     const listRef = useRef(null)
+    const progressRef = useRef(null)
+
+    // Load Profile on Login
+    useEffect(() => {
+        if (currentUser && vaniData) {
+            const saved = localStorage.getItem(`vani_user_${currentUser}_progress`);
+            if (saved) {
+                try {
+                    const { tab, track, time } = JSON.parse(saved);
+                    if (tab) setActiveTab(tab);
+                    if (track) {
+                        setCurrentTrack(track);
+                        // Defer playback slightly
+                        setTimeout(() => {
+                            if (audioRef.current) {
+                                audioRef.current.src = resolveUrl(track);
+                                audioRef.current.currentTime = time || 0;
+                                setCurrentTime(time || 0);
+                            }
+                        }, 500);
+                    }
+                } catch (e) { console.error("Profile load failed", e); }
+            }
+        }
+    }, [currentUser, vaniData])
+
+    // Auto-Save Progress (Throttled)
+    useEffect(() => {
+        if (!currentUser || !currentTrack) return;
+
+        const saveState = () => {
+            const state = {
+                tab: activeTab,
+                track: currentTrack,
+                time: audioRef.current ? audioRef.current.currentTime : 0,
+                lastPlayed: Date.now()
+            };
+            localStorage.setItem(`vani_user_${currentUser}_progress`, JSON.stringify(state));
+        };
+
+        const interval = setInterval(saveState, 5000);
+        return () => clearInterval(interval);
+    }, [currentUser, currentTrack, activeTab, currentTime])
+
+    const handleLogin = (userId) => {
+        setCurrentUser(userId);
+        localStorage.setItem('vani_last_user', userId);
+    }
+
+    const handleLogout = () => {
+        if (audioRef.current) { audioRef.current.pause(); }
+        setIsPlaying(false);
+        setCurrentUser(null);
+        localStorage.removeItem('vani_last_user');
+        setCurrentTrack(null);
+    }
 
     useEffect(() => {
         fetch('data/vani_data.json')
@@ -109,8 +170,6 @@ const VaniPlayer = () => {
         setPlaybackRate(next); audioRef.current.playbackRate = next;
     }
 
-    const progressRef = useRef(null);
-
     const handleSeek = (e) => {
         if (!progressRef.current || !audioRef.current.duration) return;
         const r = progressRef.current.getBoundingClientRect();
@@ -139,9 +198,35 @@ const VaniPlayer = () => {
         </div>
     )
 
+    if (!currentUser) return <LoginScreen onLogin={handleLogin} />
+
     return (
         <div className="main-layout" style={{ height: '100vh', overflow: 'hidden' }}>
-            <header className="app-header" style={{ opacity: showDetail ? 0 : 1, transition: '0.3s' }}>
+            <header className="app-header" style={{ opacity: showDetail ? 0 : 1, transition: '0.3s', position: 'relative' }}>
+                <button
+                    onClick={handleLogout}
+                    style={{
+                        position: 'absolute',
+                        top: '20px',
+                        right: '20px',
+                        background: 'rgba(255,255,255,0.1)',
+                        border: 'none',
+                        borderRadius: '50px',
+                        padding: '8px 16px',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '0.8rem',
+                        fontWeight: '700'
+                    }}
+                >
+                    <User size={16} />
+                    {currentUser}
+                    <LogOut size={16} style={{ marginLeft: '4px' }} />
+                </button>
+
                 <h1 className="brand-title">Vani Player</h1>
                 <p style={{ color: '#94a3b8', fontWeight: 800, fontSize: '0.65rem', letterSpacing: '0.25em' }}>DIVINE INSTRUCTION PORTAL</p>
                 <div className="search-container">
