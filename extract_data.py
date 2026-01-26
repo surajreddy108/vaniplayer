@@ -56,6 +56,10 @@ def extract_all_sheets(file_path, output_path):
                     display_title = raw_title
                     category = "Vaishnava Songs"
                     url = filename if filename.startswith('http') else f"{base_url}{filename}"
+                elif sheet_name == 'HHBRSM':
+                    filename = raw_link
+                    display_title = raw_title or filename
+                    category = "HHBRSM"
                 elif sheet_name == 'HG RSP':
                     filename = raw_link
                     display_title = raw_title
@@ -88,6 +92,9 @@ def extract_all_sheets(file_path, output_path):
                             url = f"{base_url}02_-_ISKCON_Swamis/ISKCON_Swamis_-_R_to_Y/His_Holiness_Radhanath_Swami/Lectures/00_-_Year_wise/Devotional_Nectar_-_{year}/{url_part}"
                         else:
                             url = f"{base_url}02_-_ISKCON_Swamis/ISKCON_Swamis_-_R_to_Y/His_Holiness_Radhanath_Swami/Lectures/01_-_Theme_wise/{cat_part}/{url_part}"
+
+                    elif sheet_name == 'HHBRSM':
+                        url = f"{base_url}{url_part}"
 
                     elif sheet_name == 'HG RSP':
                         # Default to Pune 2025 cluster for raw filenames

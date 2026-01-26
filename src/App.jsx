@@ -130,7 +130,7 @@ const VaniPlayer = () => {
     useEffect(() => { if (listRef.current) listRef.current.scrollTop = 0; }, [activeTab, search])
 
     const currentTabItems = useMemo(() => (vaniData && activeTab) ? vaniData[activeTab] || [] : [], [vaniData, activeTab])
-    const getArtwork = (tab) => (tab === 'HHRNSM' ? rnsmImg : prabhupadaImg);
+    const getArtwork = (tab) => (tab === 'HHRNSM' || tab === 'HHBRSM' ? rnsmImg : prabhupadaImg);
 
     const filteredData = useMemo(() => {
         const kw = search.toLowerCase()
