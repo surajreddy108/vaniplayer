@@ -9,6 +9,7 @@ import LoginScreen from './LoginScreen'
 import { saveUserProgress, loadUserProgress } from './firebase'
 import prabhupadaImg from './assets/prabhupada.png'
 import rnsmImg from './assets/rnsm.png'
+import hhbrsmImg from './assets/hhbrsm.png'
 
 class ErrorBoundary extends React.Component {
     constructor(props) { super(props); this.state = { hasError: false, error: null }; }
@@ -129,8 +130,19 @@ const VaniPlayer = () => {
 
     useEffect(() => { if (listRef.current) listRef.current.scrollTop = 0; }, [activeTab, search])
 
-    const currentTabItems = useMemo(() => (vaniData && activeTab) ? vaniData[activeTab] || [] : [], [vaniData, activeTab])
-    const getArtwork = (tab) => (tab === 'HHRNSM' || tab === 'HHBRSM' ? rnsmImg : prabhupadaImg);
+    const currentTabItems = useMemo(() => {
+        if (!vaniData || !activeTab) return []
+        const items = vaniData[activeTab] || []
+        if (activeTab !== 'HHBRSM') return items
+        return items
+            .slice()
+            .sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' }))
+    }, [vaniData, activeTab])
+    const getArtwork = (tab) => {
+        if (tab === 'HHBRSM') return hhbrsmImg
+        if (tab === 'HHRNSM') return rnsmImg
+        return prabhupadaImg
+    }
 
     const filteredData = useMemo(() => {
         const kw = search.toLowerCase()
