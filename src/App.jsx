@@ -44,6 +44,7 @@ const VaniPlayer = () => {
     const [playbackRate, setPlaybackRate] = useState(1)
     const [showDetail, setShowDetail] = useState(false)
     const [playbackError, setPlaybackError] = useState(null)
+    const [syncStatus, setSyncStatus] = useState('idle') // idle, saving, saved, error
 
     const audioRef = useRef(new Audio())
     const listRef = useRef(null)
@@ -53,8 +54,10 @@ const VaniPlayer = () => {
     useEffect(() => {
         if (currentUser && vaniData) {
             const fetchCloudData = async () => {
+                setSyncStatus('loading');
                 const saved = await loadUserProgress(currentUser);
                 if (saved) {
+                    console.log("Cloud Data Loaded:", saved);
                     const { tab, track, time } = saved;
                     if (tab) setActiveTab(tab);
                     if (track) {
@@ -67,6 +70,9 @@ const VaniPlayer = () => {
                             }
                         }, 500);
                     }
+                    setSyncStatus('saved');
+                } else {
+                    setSyncStatus('idle');
                 }
             };
             fetchCloudData();
@@ -77,14 +83,20 @@ const VaniPlayer = () => {
     useEffect(() => {
         if (!currentUser || !currentTrack) return;
 
-        const saveState = () => {
+        const saveState = async () => {
+            setSyncStatus('saving');
             const state = {
                 tab: activeTab,
                 track: currentTrack,
                 time: audioRef.current ? audioRef.current.currentTime : 0,
                 lastPlayed: Date.now()
             };
-            saveUserProgress(currentUser, state);
+            try {
+                await saveUserProgress(currentUser, state);
+                setSyncStatus('saved');
+            } catch (e) {
+                setSyncStatus('error');
+            }
         };
 
         const interval = setInterval(saveState, 5000);
@@ -224,7 +236,11 @@ const VaniPlayer = () => {
                     }}
                 >
                     <User size={16} />
+                    <User size={16} />
                     {currentUser}
+                    {syncStatus === 'saving' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fbbf24', marginLeft: 4 }} />}
+                    {syncStatus === 'saved' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', marginLeft: 4 }} />}
+                    {syncStatus === 'error' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', marginLeft: 4 }} />}
                     <LogOut size={16} style={{ marginLeft: '4px' }} />
                 </button>
 
