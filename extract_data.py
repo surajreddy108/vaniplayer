@@ -43,12 +43,16 @@ def extract_all_sheets(file_path, output_path):
                     filename = raw_theme or raw_link
                     display_title = filename
                     category = raw_title
+                elif sheet_name == 'Vaishnav Songs':
+                    filename = raw_link
+                    display_title = raw_title
+                    category = "Vaishnava Songs"
+                    url = filename if filename.startswith('http') else f"{base_url}{filename}"
                 elif sheet_name == 'HG RSP':
                     filename = raw_link
                     display_title = raw_title
                     category = "English Lectures"
 
-                # Validation: MUST be an audio file
                 file_exts = ('.mp3', '.MP3', '.m4a', '.wav', '.ogg')
                 # Clean filename of row indices or artifacts
                 clean_filename = re.sub(r'\d+$', '', filename) if filename.endswith(tuple(f"{e}RowIndex" for e in file_exts)) else filename
