@@ -6,6 +6,7 @@ import {
     User, LogOut
 } from 'lucide-react'
 import LoginScreen from './LoginScreen'
+import { saveUserProgress, loadUserProgress } from './firebase'
 import prabhupadaImg from './assets/prabhupada.png'
 import rnsmImg from './assets/rnsm.png'
 
@@ -48,17 +49,16 @@ const VaniPlayer = () => {
     const listRef = useRef(null)
     const progressRef = useRef(null)
 
-    // Load Profile on Login
+    // Load Profile on Login (Cloud)
     useEffect(() => {
         if (currentUser && vaniData) {
-            const saved = localStorage.getItem(`vani_user_${currentUser}_progress`);
-            if (saved) {
-                try {
-                    const { tab, track, time } = JSON.parse(saved);
+            const fetchCloudData = async () => {
+                const saved = await loadUserProgress(currentUser);
+                if (saved) {
+                    const { tab, track, time } = saved;
                     if (tab) setActiveTab(tab);
                     if (track) {
                         setCurrentTrack(track);
-                        // Defer playback slightly
                         setTimeout(() => {
                             if (audioRef.current) {
                                 audioRef.current.src = resolveUrl(track);
@@ -67,8 +67,9 @@ const VaniPlayer = () => {
                             }
                         }, 500);
                     }
-                } catch (e) { console.error("Profile load failed", e); }
-            }
+                }
+            };
+            fetchCloudData();
         }
     }, [currentUser, vaniData])
 
@@ -83,7 +84,7 @@ const VaniPlayer = () => {
                 time: audioRef.current ? audioRef.current.currentTime : 0,
                 lastPlayed: Date.now()
             };
-            localStorage.setItem(`vani_user_${currentUser}_progress`, JSON.stringify(state));
+            saveUserProgress(currentUser, state);
         };
 
         const interval = setInterval(saveState, 5000);
