@@ -60,7 +60,7 @@ def extract_all_sheets(file_path, output_path):
                     filename = raw_link
                     display_title = raw_title or filename
                     category = "HHBRSM"
-                elif sheet_name == 'HG RSP':
+                elif sheet_name == 'HG RSP' or sheet_name == 'HGRSP':
                     filename = raw_link
                     display_title = raw_title
                     category = "English Lectures"
@@ -96,7 +96,7 @@ def extract_all_sheets(file_path, output_path):
                     elif sheet_name == 'HHBRSM':
                         url = f"{base_url}{url_part}"
 
-                    elif sheet_name == 'HG RSP':
+                    elif sheet_name == 'HG RSP' or sheet_name == 'HGRSP':
                         # Default to Pune 2025 cluster for raw filenames
                         url = f"{base_url}06_-_More/01_-_ISKCON_Pune/2025/{url_part}"
 

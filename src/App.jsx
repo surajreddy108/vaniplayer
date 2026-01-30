@@ -7,6 +7,8 @@ import {
 import prabhupadaImg from './assets/prabhupada.png'
 import rnsmImg from './assets/rnsm.png'
 import hhbrsmImg from './assets/hhbrsm.png'
+import vaishnavaSongImg from './assets/vaishnavasong.png'
+import rspImg from './assets/RSP.jpeg'
 
 class ErrorBoundary extends React.Component {
     constructor(props) { super(props); this.state = { hasError: false, error: null }; }
@@ -34,6 +36,7 @@ const VaniPlayer = () => {
 
     const [activeTab, setActiveTab] = useState('')
     const [search, setSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
     const [currentTrack, setCurrentTrack] = useState(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [progress, setProgress] = useState(0)
@@ -46,7 +49,6 @@ const VaniPlayer = () => {
 
     const audioRef = useRef(new Audio())
     const listRef = useRef(null)
-    const heroRef = useRef(null)
     const progressRef = useRef(null)
 
     const findTrackInData = (data, savedTrack) => {
@@ -129,17 +131,9 @@ const VaniPlayer = () => {
     useEffect(() => { if (listRef.current) listRef.current.scrollTop = 0; }, [activeTab, search])
 
     useEffect(() => {
-        const listEl = listRef.current
-        const heroEl = heroRef.current
-        if (!listEl || !heroEl) return
-        const onScroll = () => {
-            const offset = Math.min(140, listEl.scrollTop || 0)
-            heroEl.style.backgroundPosition = `center ${offset * 0.35}px`
-        }
-        listEl.addEventListener('scroll', onScroll, { passive: true })
-        onScroll()
-        return () => listEl.removeEventListener('scroll', onScroll)
-    }, [])
+        const handle = setTimeout(() => setDebouncedSearch(search), 150)
+        return () => clearTimeout(handle)
+    }, [search])
 
     const currentTabItems = useMemo(() => {
         if (!vaniData || !activeTab) return []
@@ -153,16 +147,17 @@ const VaniPlayer = () => {
         if (tab === 'HHBRSM') return hhbrsmImg
         if (tab === 'HHRNSM') return rnsmImg
         if (tab === 'SP-Iskcon desire tree') return prabhupadaImg
-        if (tab === 'Vaishnav Songs') return prabhupadaImg
+        if (tab === 'Vaishnav Songs') return vaishnavaSongImg
+        if (tab === 'HGRSP') return rspImg
         return prabhupadaImg
     }
 
     const filteredData = useMemo(() => {
-        const kw = search.toLowerCase()
+        const kw = debouncedSearch.toLowerCase()
         return currentTabItems.filter(item =>
             String(item.title).toLowerCase().includes(kw) || String(item.Theme).toLowerCase().includes(kw)
         )
-    }, [search, currentTabItems])
+    }, [debouncedSearch, currentTabItems])
 
     const resolveUrl = (track) => {
         let url = String(track.link || '');
@@ -249,7 +244,7 @@ const VaniPlayer = () => {
         <div className="main-layout" style={{ height: '100vh', overflow: 'hidden' }}>
             <header className="app-header" style={{ opacity: showDetail ? 0 : 1, transition: '0.3s', position: 'relative' }}>
 
-                <div ref={heroRef} className="hero-strip" style={{ backgroundImage: `url(${prabhupadaImg})` }}>
+                <div className="hero-strip">
                     <div className="hero-overlay" />
                     <div className="hero-content">
                         <h1 className="brand-title">Vani Player</h1>

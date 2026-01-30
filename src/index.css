@@ -60,11 +60,12 @@ body {
   border-radius: 26px;
   overflow: hidden;
   min-height: 170px;
-  background-size: cover;
-  background-position: center;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(247, 197, 102, 0.18), transparent 45%),
+    radial-gradient(circle at 80% 20%, rgba(118, 146, 206, 0.25), transparent 55%),
+    linear-gradient(135deg, rgba(18, 28, 54, 0.95), rgba(10, 16, 32, 0.98));
   box-shadow: var(--soft-glow);
   border: 1px solid rgba(148, 163, 184, 0.2);
-  transition: background-position 0.2s ease;
 }
 
 .hero-overlay {
@@ -209,6 +210,8 @@ body {
   cursor: pointer;
   transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   box-shadow: var(--card-glow);
+  content-visibility: auto;
+  contain-intrinsic-size: 72px;
 }
 
 .song-card:hover {
