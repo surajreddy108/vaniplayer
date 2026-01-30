@@ -11,9 +11,10 @@
   --glass-bg: rgba(10, 18, 36, 0.92);
   --glass-border: rgba(148, 163, 184, 0.15);
   --accent-gradient: linear-gradient(135deg, #f7c566 0%, #f2a840 55%, #e79a3c 100%);
-  --soft-glow: 0 22px 50px rgba(12, 20, 40, 0.45);
-  --card-glow: 0 18px 36px rgba(12, 20, 40, 0.35);
+  --soft-glow: 0 24px 60px rgba(8, 12, 24, 0.55);
+  --card-glow: 0 18px 34px rgba(6, 10, 22, 0.4);
   --ring: 0 0 0 3px rgba(247, 197, 102, 0.25);
+  --hero-tint: rgba(12, 20, 40, 0.8);
   --safe-bottom: env(safe-area-inset-bottom, 20px);
 }
 
@@ -49,9 +50,35 @@ body {
 
 /* Header & Search */
 .app-header {
-  padding: 42px 24px 16px;
+  padding: 26px 24px 18px;
   text-align: center;
   flex-shrink: 0;
+}
+
+.hero-strip {
+  position: relative;
+  border-radius: 26px;
+  overflow: hidden;
+  min-height: 170px;
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--soft-glow);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: background-position 0.2s ease;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(8, 12, 24, 0.35) 0%, rgba(8, 12, 24, 0.75) 75%),
+    linear-gradient(90deg, rgba(8, 12, 24, 0.55) 0%, rgba(8, 12, 24, 0.15) 60%);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  padding: 26px 24px 22px;
 }
 
 .brand-title {
@@ -63,6 +90,38 @@ body {
   -webkit-text-fill-color: transparent;
   margin-bottom: 10px;
   letter-spacing: -0.04em;
+}
+
+.brand-tagline {
+  color: var(--text-muted);
+  font-weight: 800;
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+}
+
+.quote-banner {
+  margin: 14px auto 8px;
+  max-width: 720px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(12, 20, 40, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: var(--card-glow);
+}
+
+.quote-text {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  font-weight: 600;
+  color: #f2f4f8;
+}
+
+.quote-meta {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .search-container {
@@ -136,25 +195,28 @@ body {
   scrollbar-width: thin;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .song-card {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: rgba(12, 20, 40, 0.6);
+  background:
+    linear-gradient(135deg, rgba(20, 30, 54, 0.78) 0%, rgba(10, 18, 36, 0.82) 100%);
   border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   box-shadow: var(--card-glow);
 }
 
 .song-card:hover {
-  background: rgba(15, 26, 50, 0.9);
+  background:
+    linear-gradient(135deg, rgba(26, 40, 72, 0.9) 0%, rgba(12, 20, 40, 0.9) 100%);
   border-color: rgba(247, 197, 102, 0.6);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 22px 40px rgba(6, 10, 22, 0.45);
 }
 
 .song-info {
@@ -194,6 +256,12 @@ body {
   z-index: 100;
   box-shadow: var(--soft-glow);
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mini-player:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 26px 60px rgba(8, 12, 24, 0.6);
 }
 
 /* 
@@ -211,6 +279,7 @@ body {
   /* Fallback */
   height: 100dvh;
   /* Exact viewport height on mobile */
+  animation: fadeIn 0.35s ease;
 }
 
 .detail-header {
@@ -284,6 +353,17 @@ body {
   width: 100%;
   flex-shrink: 0;
   /* Controls NEVER shrink */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .progress-container {
@@ -440,6 +520,15 @@ body {
 
 /* Mobile Tweaks within the Unified Layout */
 @media (max-width: 600px) {
+  .hero-strip {
+    border-radius: 20px;
+    min-height: 150px;
+  }
+
+  .hero-content {
+    padding: 22px 18px 18px;
+  }
+
   .player-controls-bar {
     padding: 24px 20px max(24px, var(--safe-bottom));
   }
@@ -462,3 +551,15 @@ body {
     display: none;
   }
 }
+  .quote-banner {
+    margin-top: 14px;
+    padding: 12px 14px;
+  }
+
+  .quote-text {
+    font-size: 0.9rem;
+  }
+
+  .quote-meta {
+    font-size: 0.68rem;
+  }

@@ -46,6 +46,7 @@ const VaniPlayer = () => {
 
     const audioRef = useRef(new Audio())
     const listRef = useRef(null)
+    const heroRef = useRef(null)
     const progressRef = useRef(null)
 
     const findTrackInData = (data, savedTrack) => {
@@ -127,6 +128,19 @@ const VaniPlayer = () => {
 
     useEffect(() => { if (listRef.current) listRef.current.scrollTop = 0; }, [activeTab, search])
 
+    useEffect(() => {
+        const listEl = listRef.current
+        const heroEl = heroRef.current
+        if (!listEl || !heroEl) return
+        const onScroll = () => {
+            const offset = Math.min(140, listEl.scrollTop || 0)
+            heroEl.style.backgroundPosition = `center ${offset * 0.35}px`
+        }
+        listEl.addEventListener('scroll', onScroll, { passive: true })
+        onScroll()
+        return () => listEl.removeEventListener('scroll', onScroll)
+    }, [])
+
     const currentTabItems = useMemo(() => {
         if (!vaniData || !activeTab) return []
         const items = vaniData[activeTab] || []
@@ -138,6 +152,8 @@ const VaniPlayer = () => {
     const getArtwork = (tab) => {
         if (tab === 'HHBRSM') return hhbrsmImg
         if (tab === 'HHRNSM') return rnsmImg
+        if (tab === 'SP-Iskcon desire tree') return prabhupadaImg
+        if (tab === 'Vaishnav Songs') return prabhupadaImg
         return prabhupadaImg
     }
 
@@ -233,8 +249,17 @@ const VaniPlayer = () => {
         <div className="main-layout" style={{ height: '100vh', overflow: 'hidden' }}>
             <header className="app-header" style={{ opacity: showDetail ? 0 : 1, transition: '0.3s', position: 'relative' }}>
 
-                <h1 className="brand-title">Vani Player</h1>
-                <p style={{ color: '#94a3b8', fontWeight: 800, fontSize: '0.65rem', letterSpacing: '0.25em' }}>DIVINE INSTRUCTION PORTAL</p>
+                <div ref={heroRef} className="hero-strip" style={{ backgroundImage: `url(${prabhupadaImg})` }}>
+                    <div className="hero-overlay" />
+                    <div className="hero-content">
+                        <h1 className="brand-title">Vani Player</h1>
+                        <p className="brand-tagline">DIVINE INSTRUCTION PORTAL</p>
+                    </div>
+                </div>
+                <div className="quote-banner">
+                    <p className="quote-text">“Loving devotional service to the Lord begins with hearing about the Lord.”</p>
+                    <p className="quote-meta">Śrīmad‑Bhāgavatam 1.7.7 • Śrīla Prabhupāda</p>
+                </div>
                 <div className="search-container">
                     <Search size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
                     <input className="search-input" placeholder="Search teachings..." value={search} onChange={(e) => setSearch(e.target.value)} />
