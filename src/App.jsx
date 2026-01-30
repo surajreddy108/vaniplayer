@@ -2,11 +2,8 @@ import React, { useState, useMemo, useEffect, useRef } from 'react'
 import {
     Search, Play, Pause, ChevronLeft, ChevronRight,
     X, Shuffle, RotateCcw, RotateCw,
-    MoreHorizontal, AlertCircle, Loader2, Link2, Info,
-    User, LogOut
+    MoreHorizontal, AlertCircle, Loader2, Link2, Info
 } from 'lucide-react'
-import LoginScreen from './LoginScreen'
-import { saveUserProgress, loadUserProgress } from './firebase'
 import prabhupadaImg from './assets/prabhupada.png'
 import rnsmImg from './assets/rnsm.png'
 import hhbrsmImg from './assets/hhbrsm.png'
@@ -33,7 +30,7 @@ const VaniPlayer = () => {
     const [loading, setLoading] = useState(true)
     const [loadError, setLoadError] = useState(null)
 
-    const [currentUser, setCurrentUser] = useState(localStorage.getItem('vani_last_user') || null)
+    const currentUser = 'default'
 
     const [activeTab, setActiveTab] = useState('')
     const [search, setSearch] = useState('')
@@ -45,77 +42,77 @@ const VaniPlayer = () => {
     const [playbackRate, setPlaybackRate] = useState(1)
     const [showDetail, setShowDetail] = useState(false)
     const [playbackError, setPlaybackError] = useState(null)
-    const [syncStatus, setSyncStatus] = useState('idle') // idle, saving, saved, error
+    const storageKey = 'vani_progress'
 
     const audioRef = useRef(new Audio())
     const listRef = useRef(null)
     const progressRef = useRef(null)
 
-    // Load Profile on Login (Cloud)
-    useEffect(() => {
-        if (currentUser && vaniData) {
-            const fetchCloudData = async () => {
-                setSyncStatus('loading');
-                const saved = await loadUserProgress(currentUser);
-                if (saved) {
-                    console.log("Cloud Data Loaded:", saved);
-                    const { tab, track, time } = saved;
-                    if (tab) setActiveTab(tab);
-                    if (track) {
-                        setCurrentTrack(track);
-                        setTimeout(() => {
-                            if (audioRef.current) {
-                                audioRef.current.src = resolveUrl(track);
-                                audioRef.current.currentTime = time || 0;
-                                setCurrentTime(time || 0);
-                            }
-                        }, 500);
-                    }
-                    setSyncStatus('saved');
-                } else {
-                    setSyncStatus('idle');
-                }
-            };
-            fetchCloudData();
+    const findTrackInData = (data, savedTrack) => {
+        if (!data || !savedTrack) return null
+        const { link, title, Theme } = savedTrack
+        for (const tab of Object.keys(data)) {
+            const items = data[tab] || []
+            const found = items.find(item =>
+                (link && item.link === link) ||
+                (title && String(item.title) === String(title) && String(item.Theme) === String(Theme || ''))
+            )
+            if (found) return { track: found, tab }
         }
-    }, [currentUser, vaniData])
+        return null
+    }
 
-    // Auto-Save Progress (Throttled)
+    // Load last progress (Local)
+    useEffect(() => {
+        if (!vaniData) return
+        try {
+            const raw = localStorage.getItem(storageKey)
+            if (!raw) return
+            const saved = JSON.parse(raw)
+            const { tab, time, track } = saved || {}
+            if (tab) setActiveTab(tab)
+            const resolved = findTrackInData(vaniData, track)
+            if (resolved?.track) {
+                setCurrentTrack(resolved.track)
+                if (resolved.tab) setActiveTab(resolved.tab)
+                setTimeout(() => {
+                    if (audioRef.current) {
+                        audioRef.current.src = resolveUrl(resolved.track)
+                        audioRef.current.currentTime = time || 0
+                        setCurrentTime(time || 0)
+                    }
+                }, 300)
+            }
+        } catch (e) {
+            // Ignore corrupted local storage
+        }
+    }, [vaniData])
+
+    // Auto-Save Progress (Local)
     useEffect(() => {
         if (!currentUser || !currentTrack) return;
 
-        const saveState = async () => {
-            setSyncStatus('saving');
+        const saveState = () => {
             const state = {
                 tab: activeTab,
-                track: currentTrack,
+                track: {
+                    title: currentTrack.title,
+                    Theme: currentTrack.Theme,
+                    link: currentTrack.link
+                },
                 time: audioRef.current ? audioRef.current.currentTime : 0,
                 lastPlayed: Date.now()
             };
             try {
-                await saveUserProgress(currentUser, state);
-                setSyncStatus('saved');
+                localStorage.setItem(storageKey, JSON.stringify(state))
             } catch (e) {
-                setSyncStatus('error');
+                // Ignore storage failures
             }
         };
 
         const interval = setInterval(saveState, 5000);
         return () => clearInterval(interval);
     }, [currentUser, currentTrack, activeTab, currentTime])
-
-    const handleLogin = (userId) => {
-        setCurrentUser(userId);
-        localStorage.setItem('vani_last_user', userId);
-    }
-
-    const handleLogout = () => {
-        if (audioRef.current) { audioRef.current.pause(); }
-        setIsPlaying(false);
-        setCurrentUser(null);
-        localStorage.removeItem('vani_last_user');
-        setCurrentTrack(null);
-    }
 
     useEffect(() => {
         fetch('data/vani_data.json')
@@ -217,44 +214,24 @@ const VaniPlayer = () => {
     }, [isPlaying])
 
     if (loading) return (
-        <div style={{ background: '#0f172a', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-            <Loader2 size={48} className="animate-spin" style={{ color: '#fbbf24', marginBottom: '20px' }} />
-            <h2 style={{ letterSpacing: '0.1em', fontWeight: 800 }}>VANI ARCHIVE LOADING...</h2>
+        <div className="loading-screen">
+            <Loader2 size={48} className="animate-spin loading-icon" />
+            <h2 className="loading-title">VANI ARCHIVE LOADING...</h2>
         </div>
     )
 
-    if (!currentUser) return <LoginScreen onLogin={handleLogin} />
+    if (loadError) return (
+        <div className="loading-screen">
+            <AlertCircle size={48} className="error-icon" />
+            <h2 className="loading-title">Couldn’t sync the archive</h2>
+            <p className="error-text">{String(loadError)}</p>
+            <button className="primary-btn" onClick={() => window.location.reload()}>Try Again</button>
+        </div>
+    )
 
     return (
         <div className="main-layout" style={{ height: '100vh', overflow: 'hidden' }}>
             <header className="app-header" style={{ opacity: showDetail ? 0 : 1, transition: '0.3s', position: 'relative' }}>
-                <button
-                    onClick={handleLogout}
-                    style={{
-                        position: 'absolute',
-                        top: '20px',
-                        right: '20px',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: 'none',
-                        borderRadius: '50px',
-                        padding: '8px 16px',
-                        color: '#94a3b8',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        fontSize: '0.8rem',
-                        fontWeight: '700'
-                    }}
-                >
-                    <User size={16} />
-                    <User size={16} />
-                    {currentUser}
-                    {syncStatus === 'saving' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fbbf24', marginLeft: 4 }} />}
-                    {syncStatus === 'saved' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', marginLeft: 4 }} />}
-                    {syncStatus === 'error' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', marginLeft: 4 }} />}
-                    <LogOut size={16} style={{ marginLeft: '4px' }} />
-                </button>
 
                 <h1 className="brand-title">Vani Player</h1>
                 <p style={{ color: '#94a3b8', fontWeight: 800, fontSize: '0.65rem', letterSpacing: '0.25em' }}>DIVINE INSTRUCTION PORTAL</p>
