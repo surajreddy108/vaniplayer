@@ -27,6 +27,45 @@ class ErrorBoundary extends React.Component {
     }
 }
 
+const TrackList = React.memo(function TrackList({ items, activeTab, currentTrack, isPlaying, onPlay }) {
+    return (
+        <>
+            {items.map((track, i) => (
+                <div key={i} className="song-card" onClick={() => onPlay(track, activeTab)}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', marginRight: '16px', flexShrink: 0 }}>
+                        <img src={getArtworkForTab(activeTab)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Art" />
+                    </div>
+                    <div className="song-info">
+                        <div className="song-title" style={{ color: currentTrack === track ? '#fbbf24' : 'white' }}>{String(track.title)}</div>
+                        <div className="song-meta">{String(track.Theme || activeTab).substring(0, 100)}</div>
+                    </div>
+                    <div>
+                        {currentTrack === track && isPlaying ? <Pause size={20} fill="#fbbf24" stroke="none" /> : <Play size={20} />}
+                    </div>
+                </div>
+            ))}
+        </>
+    )
+})
+
+const getArtworkForTab = (tab) => {
+    if (tab === 'HHBRSM') return hhbrsmImg
+    if (tab === 'HHRNSM') return rnsmImg
+    if (tab === 'SP-Iskcon desire tree') return prabhupadaImg
+    if (tab === 'Vaishnav Songs') return vaishnavaSongImg
+    if (tab === 'HGRSP') return rspImg
+    return prabhupadaImg
+}
+
+const resolveUrl = (track) => {
+    let url = String(track.link || '')
+    if (url.includes('drive.google.com') && !url.includes('export=download')) {
+        const id = url.split('id=')[1]?.split('&')[0]
+        if (id) return `https://drive.google.com/uc?id=${id}&export=download`
+    }
+    return url
+}
+
 const VaniPlayer = () => {
     const [vaniData, setVaniData] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -38,6 +77,7 @@ const VaniPlayer = () => {
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [currentTrack, setCurrentTrack] = useState(null)
+    const [currentTrackTab, setCurrentTrackTab] = useState('')
     const [isPlaying, setIsPlaying] = useState(false)
     const [progress, setProgress] = useState(0)
     const [duration, setDuration] = useState(0)
@@ -50,6 +90,7 @@ const VaniPlayer = () => {
     const audioRef = useRef(new Audio())
     const listRef = useRef(null)
     const progressRef = useRef(null)
+    const lastProgressUpdateRef = useRef(0)
 
     const findTrackInData = (data, savedTrack) => {
         if (!data || !savedTrack) return null
@@ -77,7 +118,10 @@ const VaniPlayer = () => {
             const resolved = findTrackInData(vaniData, track)
             if (resolved?.track) {
                 setCurrentTrack(resolved.track)
-                if (resolved.tab) setActiveTab(resolved.tab)
+                if (resolved.tab) {
+                    setActiveTab(resolved.tab)
+                    setCurrentTrackTab(resolved.tab)
+                }
                 setTimeout(() => {
                     if (audioRef.current) {
                         audioRef.current.src = resolveUrl(resolved.track)
@@ -96,8 +140,9 @@ const VaniPlayer = () => {
         if (!currentUser || !currentTrack) return;
 
         const saveState = () => {
+            const tabForTrack = currentTrackTab || activeTab
             const state = {
-                tab: activeTab,
+                tab: tabForTrack,
                 track: {
                     title: currentTrack.title,
                     Theme: currentTrack.Theme,
@@ -115,7 +160,7 @@ const VaniPlayer = () => {
 
         const interval = setInterval(saveState, 5000);
         return () => clearInterval(interval);
-    }, [currentUser, currentTrack, activeTab, currentTime])
+    }, [currentUser, currentTrack, activeTab, currentTrackTab])
 
     useEffect(() => {
         fetch('data/vani_data.json')
@@ -143,15 +188,6 @@ const VaniPlayer = () => {
             .slice()
             .sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' }))
     }, [vaniData, activeTab])
-    const getArtwork = (tab) => {
-        if (tab === 'HHBRSM') return hhbrsmImg
-        if (tab === 'HHRNSM') return rnsmImg
-        if (tab === 'SP-Iskcon desire tree') return prabhupadaImg
-        if (tab === 'Vaishnav Songs') return vaishnavaSongImg
-        if (tab === 'HGRSP') return rspImg
-        return prabhupadaImg
-    }
-
     const filteredData = useMemo(() => {
         const kw = debouncedSearch.toLowerCase()
         return currentTabItems.filter(item =>
@@ -159,16 +195,7 @@ const VaniPlayer = () => {
         )
     }, [debouncedSearch, currentTabItems])
 
-    const resolveUrl = (track) => {
-        let url = String(track.link || '');
-        if (url.includes('drive.google.com') && !url.includes('export=download')) {
-            const id = url.split('id=')[1]?.split('&')[0];
-            if (id) return `https://drive.google.com/uc?id=${id}&export=download`;
-        }
-        return url;
-    }
-
-    const handlePlay = async (track) => {
+    const handlePlay = React.useCallback(async (track, trackTab) => {
         setPlaybackError(null);
         const resolved = resolveUrl(track);
         if (currentTrack === track) {
@@ -177,6 +204,7 @@ const VaniPlayer = () => {
             return;
         }
         setCurrentTrack(track);
+        if (trackTab) setCurrentTrackTab(trackTab);
         audioRef.current.src = resolved;
         audioRef.current.playbackRate = playbackRate;
         audioRef.current.load();
@@ -194,7 +222,7 @@ const VaniPlayer = () => {
             }
             setPlaybackError("Link unavailable.");
         }
-    }
+    }, [currentTrack, isPlaying, playbackRate])
 
     const skip = (s) => { if (audioRef.current.duration) audioRef.current.currentTime += s; }
     const changeSpeed = () => {
@@ -213,15 +241,27 @@ const VaniPlayer = () => {
 
     useEffect(() => {
         const audio = audioRef.current
-        const update = () => {
+        const update = (force = false) => {
+            const now = Date.now()
+            if (!force && now - lastProgressUpdateRef.current < 250) return
+            lastProgressUpdateRef.current = now
             setProgress(isNaN(audio.currentTime / audio.duration) ? 0 : (audio.currentTime / audio.duration) * 100)
-            setCurrentTime(audio.currentTime); setDuration(audio.duration || 0);
+            setCurrentTime(audio.currentTime)
+            setDuration(audio.duration || 0)
         }
+        const handleLoadedMetadata = () => update(true)
+        const handleEnded = () => setIsPlaying(false)
+        const handleError = () => { if (isPlaying) setPlaybackError("Transmission interrupted."); setIsPlaying(false); }
         audio.addEventListener('timeupdate', update)
-        audio.addEventListener('loadedmetadata', update)
-        audio.addEventListener('ended', () => setIsPlaying(false))
-        audio.addEventListener('error', () => { if (isPlaying) setPlaybackError("Transmission interrupted."); setIsPlaying(false); })
-        return () => { audio.removeEventListener('timeupdate', update); audio.removeEventListener('loadedmetadata', update); }
+        audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+        audio.addEventListener('ended', handleEnded)
+        audio.addEventListener('error', handleError)
+        return () => {
+            audio.removeEventListener('timeupdate', update)
+            audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+            audio.removeEventListener('ended', handleEnded)
+            audio.removeEventListener('error', handleError)
+        }
     }, [isPlaying])
 
     if (loading) return (
@@ -267,31 +307,24 @@ const VaniPlayer = () => {
             </header>
 
             <main ref={listRef} className="song-grid" style={{ flexGrow: 1, overflowY: 'auto', opacity: showDetail ? 0 : 1 }}>
-                {filteredData.map((track, i) => (
-                    <div key={i} className="song-card" onClick={() => handlePlay(track)}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', marginRight: '16px', flexShrink: 0 }}>
-                            <img src={getArtwork(activeTab)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Art" />
-                        </div>
-                        <div className="song-info">
-                            <div className="song-title" style={{ color: currentTrack === track ? '#fbbf24' : 'white' }}>{String(track.title)}</div>
-                            <div className="song-meta">{String(track.Theme || activeTab).substring(0, 100)}</div>
-                        </div>
-                        <div>
-                            {currentTrack === track && isPlaying ? <Pause size={20} fill="#fbbf24" stroke="none" /> : <Play size={20} />}
-                        </div>
-                    </div>
-                ))}
+                <TrackList
+                    items={filteredData}
+                    activeTab={activeTab}
+                    currentTrack={currentTrack}
+                    isPlaying={isPlaying}
+                    onPlay={handlePlay}
+                />
             </main>
 
             {currentTrack && !showDetail && (
                 <div className="mini-player" onClick={() => setShowDetail(true)}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                         <div style={{ width: '44px', height: '44px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
-                            <img src={getArtwork(activeTab)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={getArtworkForTab(currentTrackTab || activeTab)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                         <div style={{ minWidth: 0 }}>
                             <div style={{ fontWeight: 800, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{String(currentTrack.title)}</div>
-                            <div style={{ fontSize: '0.65rem', color: '#fbbf24', fontWeight: 700 }}>{activeTab}</div>
+                            <div style={{ fontSize: '0.65rem', color: '#fbbf24', fontWeight: 700 }}>{currentTrackTab || activeTab}</div>
                         </div>
                     </div>
                     <button className="icon-btn" onClick={(e) => { e.stopPropagation(); handlePlay(currentTrack); }}>
@@ -310,10 +343,10 @@ const VaniPlayer = () => {
 
                     <div className="detail-content">
                         <div className="artwork-box">
-                            <img src={getArtwork(activeTab)} />
+                            <img src={getArtworkForTab(currentTrackTab || activeTab)} />
                         </div>
                         <h2 className="detail-title">{String(currentTrack.title)}</h2>
-                        <p className="detail-meta">{activeTab} • {currentTrack.Theme || 'Spiritual Archive'}</p>
+                        <p className="detail-meta">{currentTrackTab || activeTab} • {currentTrack.Theme || 'Spiritual Archive'}</p>
                         {playbackError && <div style={{ color: '#f87171', fontSize: '0.85rem', fontWeight: 700, marginTop: '10px' }}>{playbackError}</div>}
                     </div>
 
