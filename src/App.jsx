@@ -180,6 +180,12 @@ const VaniPlayer = () => {
         return () => clearTimeout(handle)
     }, [search])
 
+    useEffect(() => {
+        if (!currentTrack || currentTrackTab || !vaniData) return
+        const resolved = findTrackInData(vaniData, currentTrack)
+        if (resolved?.tab) setCurrentTrackTab(resolved.tab)
+    }, [currentTrack, currentTrackTab, vaniData])
+
     const currentTabItems = useMemo(() => {
         if (!vaniData || !activeTab) return []
         const items = vaniData[activeTab] || []
@@ -199,6 +205,7 @@ const VaniPlayer = () => {
         setPlaybackError(null);
         const resolved = resolveUrl(track);
         if (currentTrack === track) {
+            if (trackTab && trackTab !== currentTrackTab) setCurrentTrackTab(trackTab);
             if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
             else { audioRef.current.play(); setIsPlaying(true); }
             return;
@@ -211,7 +218,6 @@ const VaniPlayer = () => {
         try {
             await audioRef.current.play();
             setIsPlaying(true);
-            setShowDetail(true);
         } catch (e) {
             if (!resolved.includes('drive.google.com')) {
                 const filename = resolved.split('/').pop().replace(/ /g, '%20');
@@ -222,7 +228,7 @@ const VaniPlayer = () => {
             }
             setPlaybackError("Link unavailable.");
         }
-    }, [currentTrack, isPlaying, playbackRate])
+    }, [currentTrack, currentTrackTab, isPlaying, playbackRate])
 
     const skip = (s) => { if (audioRef.current.duration) audioRef.current.currentTime += s; }
     const changeSpeed = () => {
@@ -327,7 +333,7 @@ const VaniPlayer = () => {
                             <div style={{ fontSize: '0.65rem', color: '#fbbf24', fontWeight: 700 }}>{currentTrackTab || activeTab}</div>
                         </div>
                     </div>
-                    <button className="icon-btn" onClick={(e) => { e.stopPropagation(); handlePlay(currentTrack); }}>
+                    <button className="icon-btn" onClick={(e) => { e.stopPropagation(); handlePlay(currentTrack, currentTrackTab || activeTab); }}>
                         {isPlaying ? <Pause size={28} fill="white" /> : <Play size={28} fill="white" />}
                     </button>
                 </div>
